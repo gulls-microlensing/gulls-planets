@@ -1,0 +1,5 @@
+planets/
+.vscode/
+__pycache__/
+*.pyc
+.DS_Store
