@@ -46,6 +46,11 @@ nl = 10000  # number of planets to generate per file
 nf = 1  # number of files to generate per field
 overwrite_existing = True  # set True to regenerate even if file already exists
 
+# Text output formatting controls
+delineator = ","
+header = True
+_HEADER_LINE = 'mass (M_Sun), a (au), inc (deg), p (deg), comp (0=planet,1=starbd)'
+
 # Fixed seeding configuration: set to an integer for reproducible runs, or None (default) for nondeterministic.
 FIXED_BASE_SEED = None
 
@@ -305,7 +310,11 @@ def worker(task):
     if file_ext == ".npy":
         np.save(pfile, combined_array)
     else:
-        np.savetxt(pfile, combined_array, delimiter=', ', header='mass (M_Sun), a (au), inc (deg), p (deg), comp (0=planet,1=starbd)')
+        save_kwargs = {"delimiter": delineator}
+        if header:
+            save_kwargs["header"] = _HEADER_LINE
+            save_kwargs["comments"] = "# "
+        np.savetxt(pfile, combined_array, **save_kwargs)
 
 def main():
     """Entry point: orchestrate multiprocessing generation across fields.

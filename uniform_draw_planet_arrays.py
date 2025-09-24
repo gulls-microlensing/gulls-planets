@@ -34,7 +34,6 @@ Notes
 """
 
 import os
-import sys
 import math
 import numpy as np
 import multiprocessing as mp
@@ -54,6 +53,11 @@ file_ext = ''
 nl = 10000      # planets per file
 nf = 1          # files per field
 overwrite_existing = True  # if False, existing files are kept
+
+# Text output formatting controls
+delineator = ","
+header = True
+_HEADER_LINE = 'mass (M_Sun), a (au), inc (deg), p (deg)'
 
 # Fixed seeding configuration (mirrors SUMI2023 script). Set to int for reproducible run.
 FIXED_BASE_SEED = None
@@ -148,7 +152,11 @@ def worker(task):
     if file_ext == ".npy":
         np.save(pfile, combined_array)
     else:
-        np.savetxt(pfile, combined_array, delimiter=', ', header='mass (M_Sun), a (au), inc (deg), p (deg)')
+        save_kwargs = {"delimiter": delineator}
+        if header:
+            save_kwargs["header"] = _HEADER_LINE
+            save_kwargs["comments"] = "# "
+        np.savetxt(pfile, combined_array, **save_kwargs)
 
 def main():
     """Entry point: orchestrate uniform sampling across all fields.

@@ -66,6 +66,18 @@ python uniform_draw_planet_arrays.py
 [![Uniform Draw](LOG_UNIFORM_MF_VERIFICATION.png)](LOG_UNIFORM_MF_VERIFICATION.png)
 
 
+## Testing
+
+Run the regression test to confirm the Python and Perl samplers draw from the same distributions:
+
+```bash
+conda env create -f requirements-test.yml
+conda activate planets-test
+pytest tests/test_distribution_alignment.py
+```
+
+The test spawns the Perl script, so make sure `perl` is on your `PATH`.
+
 ## Customization
 
 Key parameters (edit near top of each script):
@@ -77,6 +89,7 @@ Key parameters (edit near top of each script):
 * `file_ext` – set to `.npy` for NumPy binary output; empty for CSV-like text.
 * `overwrite_existing` – if False existing files are left intact.
 * `FIXED_BASE_SEED` – set an integer for reproducible deterministic sampling across processes.
+* `delineator` / `header` – control separator and header emission for text outputs (can mimic the Perl format with `' '` + `False`).
 
 Composite-only parameters (defaults derived from literature):
 

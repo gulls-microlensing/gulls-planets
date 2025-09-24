@@ -10,24 +10,24 @@ my $bmin = -2.5;
 
 #my $mmin=log10(31.7828133);
 #my $mmax=log10(3178.28133);
-my $mmin=-2;#log10(0.01);
-my $mmax=log10(10.);
+my $mmin=log10(0.1);
+my $mmax=log10(10000.);
 
 
 #IDRM (interum Design Reference Mission) fields
-my $runname = "kosh_hz_uniform";
+my $runname = "pearl_test_uniform_draw";
 #my @rundes=("kgrizuniform");
 #jsut a descriptive name, this unique from previous descriptions
 my @rundes=("");
 #rl is number of simulated events in a subrun (these are sequential)
-my @rl=(100);
+my @rl=(10000);
 #nr is number of subruns (these parallelize)
-my @nr=(120);
+my @nr=(1);
 
 
 #max min semimajor axis
-my $amin=log10(0.01);
-my $amax=log10(10);
+my $amin=log10(0.3);
+my $amax=log10(30);
 
 #inclination, period, semimajor, mass
 my $inc; my $p; my $a; my $mass;
@@ -41,7 +41,7 @@ my $pi=4.0*atan(1);
 my $nl=$rl[0];
 my $nf=$nr[0];
 
-my $use_covfac=1;
+my $use_covfac=0;
 
 #for r less than length of rundes
 for (my $r=0; $r<@rundes; $r++)
@@ -58,10 +58,10 @@ for (my $r=0; $r<@rundes; $r++)
     }
     #XXX probably need to check
     if($use_covfac){
-	open(FLD,"/home/samsonaj/gulls/scripts/layout_7f_3.kosh.covfac") || die "Could not open covfac file\n";
+	open(FLD,"") || die "Could not open covfac file\n";
     }
     else{
-	open(FLD,"/scratch/microlensing/samsonaj/gulls/sources/koshimoto.sources-H.12.25.list") || die "Could not open sources file\n";
+	open(FLD,"./gulls_surot2d_H2023.sources") || die "Could not open sources file\n";
     }
 
     #rundes.sightline.subrun or some combo

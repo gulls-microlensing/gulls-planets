@@ -1,0 +1,9 @@
+name: planets-test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=2.0
+  - pytest
+  - matplotlib
