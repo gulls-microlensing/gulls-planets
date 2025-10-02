@@ -3,3 +3,10 @@ planets/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Reference Literature
+# Suzuki, 2016, https://arxiv.org/abs/1612.03939v1
+1612.03939v1.pdf 
+# latex source
+arxiv-1612.03939v1.tar.gz  
+arxiv-1612.03939v1
