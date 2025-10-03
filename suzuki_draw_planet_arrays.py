@@ -1,7 +1,7 @@
 
 """Generate s/q arrays sampled from the Suzuki et al. (2016) mass-ratio function.
 
-This script mirrors the structure of ``SUMI2023_draw_planet_arrays.py`` and
+This script mirrors the structure of ``sumi2023_draw_planet_arrays.py`` and
 ``uniform_draw_planet_arrays.py`` but draws only projected separations (``s``)
 and planet-to-host mass ratios (``q``). Sampling follows the broken power-law
 form reported by Suzuki et al. (2016, arXiv:1612.03939), combining

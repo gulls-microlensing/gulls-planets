@@ -1,6 +1,6 @@
 """Generate log-uniform planet property arrays (baseline sampler).
 
-This script is the stylistic companion to ``SUMI2023_draw_planet_arrays.py``
+This script is the stylistic companion to ``sumi2023_draw_planet_arrays.py``
 but implements a deliberately simple distribution: masses and semi-major
 axes are drawn independently, each log-uniform within configured bounds.
 Inclinations are isotropic and orbital phases uniform in [0, 360) degrees.

@@ -9,7 +9,7 @@ Execution (CLI)
 ---------------
 Run directly as a script::
 
-        python SUMI2023_draw_planet_arrays.py
+        python sumi2023_draw_planet_arrays.py
 
 Environment / Configuration is governed by the module constants at the top of
 the file (``nl``, ``nf``, ``rundes`` etc.). Set ``FIXED_BASE_SEED`` to an

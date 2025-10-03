@@ -4,7 +4,7 @@ This repository provides two sampling scripts for generating synthetic planet (a
 
 Distributions implemented:
 
-* `SUMI2023_draw_planet_arrays.py` – **Composite Sumi-style mass function**: a *sum* of two independent power-law segments in base-10 logarithmic mass space:
+* `sumi2023_draw_planet_arrays.py` – **Composite Sumi-style mass function**: a *sum* of two independent power-law segments in base-10 logarithmic mass space:
 	- Planet (free-floating / wide orbit) component:
 		\( \frac{dN}{d\log_{10} M} = Z_{\rm planet} \,( M / M_{\rm pivot,planet} )^{-\alpha_4} \)
 		with published parameters \(\alpha_4 = 0.96\), \(Z_{\rm planet}=2.18\, \mathrm{dex^{-1}\,star^{-1}}\), pivot \(M_{\rm pivot,planet}=8\,M_\oplus\), validity approximately 0.33–6660 \(M_\oplus\) (1e-6–0.02 M\(_\odot\)). Integrates to ~21 planets per star over that range.
@@ -52,7 +52,7 @@ Columns:
 Generates a mixture of the declining planetary power law and the rising star+BD segment; mixture weights are exact integrals over the requested mass interval. Supports deterministic runs via `FIXED_BASE_SEED`.
 
 ```bash
-python SUMI2023_draw_planet_arrays.py
+python sumi2023_draw_planet_arrays.py
 ```
 
 [![Sumi 2023 MF](SUMI_MF_VERIFICATION.png)](SUMI_MF_VERIFICATION.png)
