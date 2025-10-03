@@ -5,6 +5,10 @@ channels:
 dependencies:
   - python=3.11
   - numpy>=2.0
+  - pandas
+  - scikit-learn
+  - pytables
+  - h5py
   - matplotlib
   - ipykernel
   - jupyterlab

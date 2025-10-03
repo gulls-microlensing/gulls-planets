@@ -7,3 +7,8 @@ dependencies:
   - numpy>=2.0
   - pytest
   - matplotlib
+  - scikit-learn
+  - pytables
+  - h5py
+  - ipykernel
+  - jupyterlab
