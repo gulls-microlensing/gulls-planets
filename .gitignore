@@ -10,3 +10,6 @@ __pycache__/
 # latex source
 arxiv-1612.03939v1.tar.gz  
 arxiv-1612.03939v1
+
+
+.venv/

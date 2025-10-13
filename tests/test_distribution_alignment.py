@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import math
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -114,6 +115,80 @@ def _load_python_sample(
     return data
 
 
+def _run_sensmap_perl(tmp_path: Path, sources_path: Path, seed: int, name: str = "perl_test_sensmap", nsub: int = 1) -> Path:
+    repo_root = Path(__file__).resolve().parents[1]
+    perl_script = repo_root / "sensmap.pl"
+    env = os.environ.copy()
+    env["SENSMAP_SEED"] = str(seed)
+    command = [
+        "perl",
+        str(perl_script),
+        str(sources_path),
+        name,
+        str(nsub),
+    ]
+    subprocess.run(command, cwd=tmp_path, check=True, env=env)
+    return tmp_path / name
+
+
+def _load_sensmap_perl_sample(tmp_path: Path, sources_path: Path, field_number: int, seed: int) -> np.ndarray:
+    output_dir = _run_sensmap_perl(tmp_path, sources_path, seed)
+    output_file = output_dir / f"{output_dir.name}.planets.{field_number}.0"
+    data = np.loadtxt(output_file)
+    return data
+
+
+def _load_sensmap_python_sample(
+    tmp_path: Path,
+    sources_path: Path,
+    field_number: int,
+    seed: int,
+    *,
+    rundes_override: str = "python_test_sensmap",
+) -> np.ndarray:
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    module = importlib.import_module("sensmap_draw_planet_arrays")
+    module = importlib.reload(module)
+
+    cached = {
+        "rundes": module.rundes,
+        "sources_file": module.sources_file,
+        "overwrite_existing": module.overwrite_existing,
+        "FIXED_BASE_SEED": module.FIXED_BASE_SEED,
+        "header": module.header,
+        "file_ext": module.file_ext,
+        "OUTPUT_DIR": module.OUTPUT_DIR,
+    }
+
+    try:
+        module.rundes = rundes_override
+        module.sources_file = str(sources_path)
+        module.overwrite_existing = True
+        module.FIXED_BASE_SEED = seed
+        module.header = False
+        module.file_ext = ""
+
+        output_dir = tmp_path / "python_sensmap_output"
+        module.main(
+            selected_fields=[field_number],
+            max_subruns=1,
+            processes=1,
+            output_dir=output_dir,
+        )
+
+        output_file = output_dir / f"{module.rundes}.planets.{field_number}.0"
+        data = np.loadtxt(output_file)
+    finally:
+        for name, value in cached.items():
+            setattr(module, name, value)
+        module.OUTPUT_DIR = cached["OUTPUT_DIR"]
+
+    return data
+
+
 def _assert_same_distribution(array_a: np.ndarray, array_b: np.ndarray, *, label: str) -> None:
     statistic = _two_sample_ks_statistic(array_a, array_b)
     threshold = _ks_critical_value(array_a.size, array_b.size)
@@ -125,7 +200,14 @@ def _assert_same_distribution(array_a: np.ndarray, array_b: np.ndarray, *, label
         raise AssertionError(msg)
 
 
-def _save_overlay_plot(array_a: np.ndarray, array_b: np.ndarray, *, label: str) -> None:
+def _save_overlay_plot(
+    array_a: np.ndarray,
+    array_b: np.ndarray,
+    *,
+    label: str,
+    perl_kwargs: dict[str, object] | None = None,
+    python_kwargs: dict[str, object] | None = None,
+) -> None:
     """Persist an overlaid histogram comparison for visual inspection."""
     artifact_dir = Path(__file__).resolve().parents[1] / "tests" / "artifacts" / "distribution_alignment"
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -140,8 +222,11 @@ def _save_overlay_plot(array_a: np.ndarray, array_b: np.ndarray, *, label: str) 
         bins = np.linspace(combined.min(), combined.max(), 60)
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.hist(array_a, bins=bins, density=True, histtype="step", label="Perl", color="tab:blue")
-    ax.hist(array_b, bins=bins, density=True, histtype="step", label="Python", color="tab:orange")
+    perl_kwargs = {"histtype": "step", "label": "Perl", "color": "tab:blue", "linewidth": 2.5} | (perl_kwargs or {})
+    python_kwargs = {"histtype": "step", "label": "Python", "color": "tab:orange", "linewidth": 1.5} | (python_kwargs or {})
+
+    ax.hist(array_a, bins=bins, density=True, **perl_kwargs)
+    ax.hist(array_b, bins=bins, density=True, **python_kwargs)
     ax.set_xlabel(label)
     ax.set_ylabel("Density")
     ax.legend(frameon=False)
@@ -228,3 +313,63 @@ def test_output_layout_and_headers(tmp_path):
     assert not ascii_first_line.startswith("#"), "Whitespace-delimited run unexpectedly wrote a header"
     assert "," not in ascii_first_line, "Whitespace-delimited run should not include commas"
     assert len(ascii_first_line.split()) == 4, "Whitespace-delimited run should emit four space-separated columns"
+
+
+def test_sensmap_draw_matches_perl_distribution(tmp_path):
+    seed = 424242
+    sources_path = tmp_path / "sensmap.sources"
+    sources_path.write_text("0 0.0 0.0 0 0 0 0\n", encoding="ascii")
+
+    perl_sample = _load_sensmap_perl_sample(tmp_path, sources_path, field_number=0, seed=seed)
+    python_sample = _load_sensmap_python_sample(tmp_path, sources_path, field_number=0, seed=seed)
+
+    assert perl_sample.shape == python_sample.shape == (1105, 4)
+
+    assert np.allclose(perl_sample[:, 0], python_sample[:, 0])
+    assert np.allclose(perl_sample[:, 1], python_sample[:, 1])
+
+    perl_mass_log = np.log10(perl_sample[:, 0] / 3.00374072e-6)
+    python_mass_log = np.log10(python_sample[:, 0] / 3.00374072e-6)
+    _save_overlay_plot(perl_mass_log, python_mass_log, label="sensmap log10 mass (Earth units)")
+
+    perl_a_log = np.log10(perl_sample[:, 1])
+    python_a_log = np.log10(python_sample[:, 1])
+    _save_overlay_plot(perl_a_log, python_a_log, label="sensmap log10 semi-major axis")
+
+    _assert_same_distribution(perl_sample[:, 2], python_sample[:, 2], label="sensmap inclination")
+    _assert_same_distribution(perl_sample[:, 3], python_sample[:, 3], label="sensmap orbital phase")
+
+    _save_overlay_plot(perl_sample[:, 2], python_sample[:, 2], label="sensmap inclination")
+    _save_overlay_plot(perl_sample[:, 3], python_sample[:, 3], label="sensmap orbital phase")
+
+
+def test_sensmap_output_layout(tmp_path):
+    seed = 202311
+    sources_path = tmp_path / "sensmap.sources"
+    sources_path.write_text("0 0.0 0.0 0 0 0 0\n1 0.0 -0.2 0 0 0 0\n", encoding="ascii")
+
+    perl_dir = _run_sensmap_perl(tmp_path, sources_path, seed, name="perl_layout_sensmap", nsub=1)
+    perl_file = perl_dir / "perl_layout_sensmap.planets.1.0"
+    assert perl_file.is_file(), "Perl sensmap run missing expected field output"
+
+    perl_lines = perl_file.read_text(encoding="ascii").strip().splitlines()
+    assert len(perl_lines) == 1105, "Perl sensmap file should contain grid * repeats rows"
+    assert len(perl_lines[0].split()) == 4
+
+    python_sample = _load_sensmap_python_sample(
+        tmp_path,
+        sources_path,
+        field_number=1,
+        seed=seed,
+        rundes_override="python_layout_sensmap",
+    )
+
+    python_dir = tmp_path / "python_sensmap_output"
+    python_file = python_dir / "python_layout_sensmap.planets.1.0"
+    assert python_file.is_file(), "Python sensmap run missing expected field output"
+
+    python_lines = python_file.read_text(encoding="ascii").strip().splitlines()
+    assert len(python_lines) == 1105
+    assert len(python_lines[0].split()) == 4
+
+    assert not python_lines[0].startswith("#"), "Python sensmap should not prepend a header"
