@@ -54,10 +54,10 @@ TOTAL_EXPECTED_PLANETS: float | None = None # you can replace this with a number
 # -------------------------------------------------------------------------
 # Sampling bounds
 # -------------------------------------------------------------------------
-LOG10_MASS_MIN = math.log10(1e-7)    # ~0.03 Earth masses
+LOG10_MASS_MIN = math.log10(3e-5)    # ~0.03 Earth masses
 LOG10_MASS_MAX = math.log10(3e-2)    # ~10000 Earth masses
-LOG10_A_MIN = math.log10(0.3)        # default 0.3 AU
-LOG10_A_MAX = math.log10(30.0)       # default 30 AU
+LOG10_A_MIN = math.log10(1.0)        # default 0.3 AU
+LOG10_A_MAX = math.log10(10.0)       # default 30 AU
 
 # -------------------------------------------------------------------------
 # Host star mass for q ↔ m conversion
@@ -82,8 +82,8 @@ MOON_PROBABILITY = 1.0          # Probability of moon if only 1 planet (tunable)
 MOON_HILL_FRACTION = 0.1        # Moon SMA upper limit as fraction of Hill radius (tunable)
 LOG10_MOON_A_MIN = math.log10(0.005)  # 0.005 AU minimum SMA (tunable)
 # Moon mass: order of our Moon (~3.7e-8 M☉) to Neptune (~5e-5 M☉)
-LOG10_MOON_MASS_MIN = math.log10(1e-8)   # ~1/4 lunar masses
-LOG10_MOON_MASS_MAX = math.log10(1e-4)   # ~2 Neptune masses
+LOG10_MOON_MASS_MIN = math.log10(3e-8)   # ~1/4 lunar masses
+LOG10_MOON_MASS_MAX = math.log10(3e-6)   # ~2 Neptune masses
 
 # -------------------------------------------------------------------------
 # Run configuration
@@ -91,8 +91,8 @@ LOG10_MOON_MASS_MAX = math.log10(1e-4)   # ~2 Neptune masses
 rundes = 'test_multiplanet'
 sources_file = './gulls_surot2d_H2023.sources'
 file_ext = ''
-nl = 1000       # systems per file (reduced for testing)
-nf = 1          # files per field
+nl = 200       # systems per file (reduced for testing)
+nf = 600          # files per field
 overwrite_existing = True
 ALLOW_ZERO_PLANETS = False  # If False, resample until each system has >=1 planet
 
@@ -439,7 +439,7 @@ def generate_system(rng: np.random.Generator, expected_planets: float) -> np.nda
                 moon_m = draw_log_uniform_vec(1, LOG10_MOON_MASS_MIN, LOG10_MOON_MASS_MAX, rng)[0]
                 if moon_m < m1:  # Moon must be less massive than host planet
                     moon_a = draw_log_uniform_vec(1, LOG10_MOON_A_MIN, log_a_max, rng)[0]
-                    moon_ecc = draw_eccentricity_vec(1, rng, sigma=0.1)[0]
+                    moon_ecc = 0.0 #draw_eccentricity_vec(1, rng, sigma=0.1)[0]
                     moon_omega = 360.0 * rng.random()
                     moon_Omega = 360.0 * rng.random()
                     system[7:14] = [moon_m, moon_a, moon_ecc, INC_PLACEHOLDER, moon_omega, moon_Omega, 3]
@@ -487,7 +487,7 @@ def worker(task: tuple[int, int], expected_planets: float) -> dict:
     
     t_start = time.perf_counter()
     
-    base = f"{data_dir}/planets/{rundes}/{rundes}.planets"
+    base = f"{data_dir}/planets/{rundes}/{file_index}/{rundes}.planets"
     pfile = f"{base}.{field_number}.{file_index}{file_ext}"
     
     if os.path.exists(pfile):
@@ -580,6 +580,12 @@ def main() -> None:
     dir_name = f"{data_dir}/planets/{rundes}"
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
+
+    for i in range(nf):
+        dir_name = f"{data_dir}/planets/{rundes}/{i}"
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        
     
     # Get field numbers
     src_path = sources_file
