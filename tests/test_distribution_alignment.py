@@ -59,6 +59,7 @@ def _load_python_sample(
     delineator_override: str | None = None,
     header_override: bool | None = None,
     rundes_override: str = "python_uniform_test",
+    mass_bounds_earth: tuple[float, float] | None = None,
 ) -> np.ndarray:
     repo_root = Path(__file__).resolve().parents[1]
     if str(repo_root) not in sys.path:
@@ -77,6 +78,8 @@ def _load_python_sample(
         "FIXED_BASE_SEED": module.FIXED_BASE_SEED,
         "delineator": getattr(module, "delineator", ","),
         "header": getattr(module, "header", True),
+        "mmin": module.mmin,
+        "mmax": module.mmax,
     }
 
     try:
@@ -91,6 +94,10 @@ def _load_python_sample(
             module.delineator = delineator_override
         if header_override is not None:
             module.header = header_override
+        if mass_bounds_earth is not None:
+            min_mass, max_mass = mass_bounds_earth
+            module.mmin = math.log10(min_mass)
+            module.mmax = math.log10(max_mass)
 
         target_dir = Path(module.data_dir) / "planets" / module.rundes
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -240,7 +247,8 @@ def test_uniform_draw_matches_perl_distribution(tmp_path):
     seed = 314159
 
     perl_sample = _load_perl_sample(tmp_path, sample_size, seed)
-    python_sample = _load_python_sample(tmp_path, sample_size, seed)
+    # Match the Perl sampler's mass bounds for this comparison.
+    python_sample = _load_python_sample(tmp_path, sample_size, seed, mass_bounds_earth=(0.1, 10_000))
 
     perl_mass_log = np.log10(perl_sample[:, 0] / 3.00374072e-6)
     python_mass_log = np.log10(python_sample[:, 0] / 3.00348959632e-6)
