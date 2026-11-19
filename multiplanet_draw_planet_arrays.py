@@ -396,14 +396,17 @@ def generate_system(rng: np.random.Generator, expected_planets: float) -> np.nda
     if n_planets == 0:
         return system
     
+    # For both planets and the moon, draw longitude of perihelion ϖ uniformly
+    # on [0, 360) degrees. GULLS uses ω = ϖ − Ω, so independent uniform draws
+    # of ϖ and Ω give a uniform ω modulo 360 degrees.
     # Planet 1: sample (q, s) from Suzuki, convert q to mass
     log_q1, log_a1 = sample_suzuki(rng)
     m1 = q_to_mass(log_q1)
     a1 = 10.0 ** log_a1
     ecc1 = draw_eccentricity_vec(1, rng)[0]
-    omega1 = 360.0 * rng.random()
+    longitude_perihelion1 = 360.0 * rng.random()
     Omega1 = 360.0 * rng.random()
-    system[0:7] = [m1, a1, ecc1, INC_PLACEHOLDER, omega1, Omega1, 1]
+    system[0:7] = [m1, a1, ecc1, INC_PLACEHOLDER, longitude_perihelion1, Omega1, 1]
     
     if n_planets >= 2:
         # Draw second planet from Suzuki, ensuring period ratio constraint
@@ -413,9 +416,9 @@ def generate_system(rng: np.random.Generator, expected_planets: float) -> np.nda
             if check_period_ratio(a1, a2):
                 m2 = q_to_mass(log_q2)
                 ecc2 = draw_eccentricity_vec(1, rng)[0]
-                omega2 = 360.0 * rng.random()
+                longitude_perihelion2 = 360.0 * rng.random()
                 Omega2 = 360.0 * rng.random()
-                system[7:14] = [m2, a2, ecc2, INC_PLACEHOLDER, omega2, Omega2, 1]
+                system[7:14] = [m2, a2, ecc2, INC_PLACEHOLDER, longitude_perihelion2, Omega2, 1]
                 break
         # No moon possible when we have 2 planets
         return system
@@ -440,9 +443,9 @@ def generate_system(rng: np.random.Generator, expected_planets: float) -> np.nda
                 if moon_m < m1:  # Moon must be less massive than host planet
                     moon_a = draw_log_uniform_vec(1, LOG10_MOON_A_MIN, log_a_max, rng)[0]
                     moon_ecc = 0.0 #draw_eccentricity_vec(1, rng, sigma=0.1)[0]
-                    moon_omega = 360.0 * rng.random()
+                    moon_longitude_perihelion = 360.0 * rng.random()
                     moon_Omega = 360.0 * rng.random()
-                    system[7:14] = [moon_m, moon_a, moon_ecc, INC_PLACEHOLDER, moon_omega, moon_Omega, 3]
+                    system[7:14] = [moon_m, moon_a, moon_ecc, INC_PLACEHOLDER, moon_longitude_perihelion, moon_Omega, 3]
                     break
     
     return system
