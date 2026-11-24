@@ -37,6 +37,8 @@ Distributions implemented:
 
 * `uniform_draw_planet_arrays.py` – **Log-uniform baseline**: masses drawn log-uniform between 0.1–10,000 M\(_\oplus\); semi-major axes log-uniform (0.3–30 au); inclinations isotropic; orbital phase uniform.
 
+* `log_uniform_general_draw_planet_arrays.py` – **Log-uniform single planets for GULLS 3.0.0 (`general` / `gullsFish.x`)**: same sampling physics as `uniform_draw_planet_arrays.py` (log-uniform mass and semi-major axis, isotropic signed inclination) written in the 7-column GULLS `general` format, one planet per row. Defaults match the Roman eta-Earth simulation: 0.1–100 M\(_\oplus\), 0.3–30 au, circular orbits. See [Log-uniform GULLS `general` generator](#log-uniform-gulls-general-generator-cli).
+
 * `sensmap_draw_planet_arrays.py` – **Sensitivity-map grid**: reproduces the deterministic mass/semi-major axis grid from `sensmap.pl` (13 × 17 points, repeated five times) while sampling inclination and orbital phase randomly. Fields are discovered from the same sources file, enabling parity with the Perl pipeline. Because the grid is deterministic, every catalogue shares the same 13 discrete log-mass and 17 log–semi-major-axis bins; the only stochastic components are the angular draws.
 
 * `suzuki_draw_planet_arrays.py` - **THIS SCRIPT IS UNTESTED. PROCEED WITH EXTREME CAUTION>**
@@ -137,6 +139,33 @@ python multiplanet_draw_planet_arrays.py --max-planets 2 --moon-probability 0.0 
 
 These flags override the in-script defaults and allow quick experimentation without editing the source.
 
+### Log-uniform GULLS `general` generator (CLI)
+
+`log_uniform_general_draw_planet_arrays.py` writes single-planet catalogs readable by GULLS `readPlanets2.cpp` / `generalPlanet.cpp` (`gullsFish.x`, `general` branch). Each file has an un-commented, space-delimited header followed by one planet per row:
+
+```
+Mass SemimajorAxis Eccentricity Inclination LongitudePerihelion LongitudeAscNode OrbitType
+```
+
+| Column | Units | Default sampling |
+| --- | --- | --- |
+| `Mass` | M\(_\odot\) | log-uniform in 0.1–100 M\(_\oplus\) (converted with `_M_EARTH_TO_SOLAR`) |
+| `SemimajorAxis` | au | log-uniform in 0.3–30 au |
+| `Eccentricity` | – | fixed, 0.0 |
+| `Inclination` | deg | signed isotropic in [-90, 90] (same construction as `generalPlanet.cpp`) |
+| `LongitudePerihelion` | deg | uniform in [0, 360) |
+| `LongitudeAscNode` | deg | uniform in [0, 360) (GULLS uses ω = ϖ − Ω, so ω is uniform) |
+| `OrbitType` | – | `1` (planet around the primary lens) |
+
+Files are written to `planets/<rundes>/<file_index>/<rundes>.planets.<field>.<file_index>` (the per-subrun layout of the multiplanet generator); `--flat-layout` writes to `planets/<rundes>/` instead. GULLS accepts both. The base seed defaults to `FIXED_BASE_SEED = 12345`, and each `(field, file_index)` task uses `seed + field*100003 + file_index`.
+
+```bash
+python log_uniform_general_draw_planet_arrays.py --help
+python log_uniform_general_draw_planet_arrays.py -n 10000 --files-per-field 4 --rundes eta_earth
+```
+
+Main flags: `--systems-per-file/-n`, `--files-per-field`, `--seed` / `--no-seed`, `--rundes`, `--sources-file`, `--data-dir`, `--mass-min-earth`, `--mass-max-earth`, `--a-min-au`, `--a-max-au`, `--eccentricity`, `--no-overwrite`, `--flat-layout`, `--workers` (default: CPU count; `1` runs serially).
+
 To run the original Perl implementation (now reading the same sources file and allowing overrides), use:
 
 ```bash
@@ -165,6 +194,8 @@ pytest tests/test_distribution_alignment.py
 ```
 
 The test suite spawns the Perl scripts, so make sure `perl` is on your `PATH`.
+
+`tests/test_log_uniform_general.py` covers the GULLS `general` generator: it parses output the way `readPlanets2.cpp` does and checks the header, the 7-column rows, and the value ranges. It runs KS tests on log-mass, log-a, cos(inclination) and the longitudes (including ω = ϖ − Ω), and compares the inclinations against `uniform_draw_planet_arrays.py`. It also checks determinism, both output layouts, CLI range overrides and `--no-overwrite`. Run the whole suite with `pytest` from the repository root.
 
 ## Customization
 
