@@ -31,10 +31,9 @@ Output format (GULLS ``readPlanets2.cpp`` + ``generalPlanet.cpp``)
 
       Mass SemimajorAxis Eccentricity Inclination LongitudePerihelion LongitudeAscNode OrbitType
 
-* Files are named ``<rundes>.planets.<field>.<file_index>`` and, by default,
-  written to the per-subrun layout ``planets/<rundes>/<file_index>/``
-  (matching ``multiplanet_draw_planet_arrays.py``). ``--flat-layout`` writes
-  to ``planets/<rundes>/`` instead; GULLS accepts both.
+* Files are named ``<rundes>.planets.<field>.<file_index>`` and written to
+  the per-subrun layout ``planets/<rundes>/<file_index>/`` (matching
+  ``multiplanet_draw_planet_arrays.py``).
 
 Execution (CLI)
 ---------------
@@ -89,7 +88,6 @@ data_dir = './'
 nl = 10000                 # planets per file
 nf = 1                     # files per field
 overwrite_existing = True  # if False, existing files are kept
-flat_layout = False        # if True, omit the per-subrun subdirectory
 
 FIXED_BASE_SEED: int | None = 12345  # set to None for unseeded runs
 
@@ -135,8 +133,6 @@ class GeneratorConfig:
         Base seed for deterministic per-task generators.
     overwrite : bool
         Overwrite existing files when True; skip them otherwise.
-    flat_layout : bool
-        Write to ``planets/<rundes>/`` instead of ``planets/<rundes>/<file_index>/``.
     """
 
     rundes: str = rundes
@@ -149,7 +145,6 @@ class GeneratorConfig:
     eccentricity: float = ECCENTRICITY
     base_seed: int | None = FIXED_BASE_SEED
     overwrite: bool = overwrite_existing
-    flat_layout: bool = flat_layout
 
     def validate(self) -> None:
         """Raise ``ValueError`` for physically invalid configurations."""
@@ -216,7 +211,7 @@ def output_path(config: GeneratorConfig, field_number: int, file_index: int) -> 
     Parameters
     ----------
     config : GeneratorConfig
-        Run configuration (``data_dir``, ``rundes``, ``flat_layout``).
+        Run configuration (``data_dir``, ``rundes``).
     field_number : int
         Field identifier from the sources file.
     file_index : int
@@ -225,11 +220,9 @@ def output_path(config: GeneratorConfig, field_number: int, file_index: int) -> 
     Returns
     -------
     pathlib.Path
-        ``planets/<rundes>/[<file_index>/]<rundes>.planets.<field>.<file_index>``.
+        ``planets/<rundes>/<file_index>/<rundes>.planets.<field>.<file_index>``.
     """
-    run_dir = Path(config.data_dir) / 'planets' / config.rundes
-    if not config.flat_layout:
-        run_dir = run_dir / str(file_index)
+    run_dir = Path(config.data_dir) / 'planets' / config.rundes / str(file_index)
     return run_dir / f'{config.rundes}.planets.{field_number}.{file_index}'
 
 
@@ -425,8 +418,6 @@ def parse_cli_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
                    help='Fixed eccentricity for every planet (default: %(default)s)')
     p.add_argument('--no-overwrite', action='store_true', default=not overwrite_existing,
                    help='Do not overwrite existing files (default: overwrite)')
-    p.add_argument('--flat-layout', action='store_true', default=flat_layout,
-                   help='Write planets/<rundes>/<file> instead of planets/<rundes>/<file_index>/<file>')
     p.add_argument('--workers', type=int, default=None,
                    help='Worker processes (default: CPU count; 1 = serial)')
     return p.parse_args(argv)
@@ -446,7 +437,6 @@ def main(argv: Sequence[str] | None = None) -> list[str | None]:
         eccentricity=args.eccentricity,
         base_seed=None if args.no_seed else args.seed,
         overwrite=not args.no_overwrite,
-        flat_layout=args.flat_layout,
     )
     config.validate()
 

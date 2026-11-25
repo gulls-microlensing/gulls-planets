@@ -301,17 +301,18 @@ def test_cli_default_layout(tmp_path):
     assert serial.read_bytes() == (run_dir / "1" / "clirun.planets.7.1").read_bytes()
 
 
-def test_cli_flat_layout_and_ranges(tmp_path):
+def test_cli_custom_ranges(tmp_path):
     sources = _write_sources(tmp_path / "test.sources", [3])
-    _run_cli(tmp_path, "-n", "2000", "--files-per-field", "2", "--rundes", "flat",
+    _run_cli(tmp_path, "-n", "2000", "--files-per-field", "2", "--rundes", "ranges",
              "--sources-file", str(sources), "--data-dir", str(tmp_path / "out"),
-             "--flat-layout", "--workers", "1",
+             "--workers", "1",
              "--mass-min-earth", "1", "--mass-max-earth", "10",
              "--a-min-au", "1", "--a-max-au", "5", "--eccentricity", "0.25")
 
-    run_dir = tmp_path / "out" / "planets" / "flat"
-    assert sorted(p.name for p in run_dir.iterdir()) == ["flat.planets.3.0", "flat.planets.3.1"]
-    _, _, data = _parse_gulls_planet_file(run_dir / "flat.planets.3.0")
+    run_dir = tmp_path / "out" / "planets" / "ranges"
+    assert sorted(str(p.relative_to(run_dir)) for p in run_dir.rglob("*") if p.is_file()) == [
+        "0/ranges.planets.3.0", "1/ranges.planets.3.1"]
+    _, _, data = _parse_gulls_planet_file(run_dir / "0" / "ranges.planets.3.0")
     assert data.shape == (2000, 7)
     mass_earth = data[:, 0] / M_EARTH_TO_SOLAR
     assert mass_earth.min() >= 1 - 1e-5 and mass_earth.max() <= 10 + 1e-5

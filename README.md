@@ -157,14 +157,16 @@ Mass SemimajorAxis Eccentricity Inclination LongitudePerihelion LongitudeAscNode
 | `LongitudeAscNode` | deg | uniform in [0, 360) (GULLS uses ω = ϖ − Ω, so ω is uniform) |
 | `OrbitType` | – | `1` (planet around the primary lens) |
 
-Files are written to `planets/<rundes>/<file_index>/<rundes>.planets.<field>.<file_index>` (the per-subrun layout of the multiplanet generator); `--flat-layout` writes to `planets/<rundes>/` instead. GULLS accepts both. The base seed defaults to `FIXED_BASE_SEED = 12345`, and each `(field, file_index)` task uses `seed + field*100003 + file_index`.
+Files are written to `planets/<rundes>/<file_index>/<rundes>.planets.<field>.<file_index>` (the per-subrun layout of the multiplanet generator). The base seed defaults to `FIXED_BASE_SEED = 12345`, and each `(field, file_index)` task uses `seed + field*100003 + file_index`.
 
 ```bash
 python log_uniform_general_draw_planet_arrays.py --help
 python log_uniform_general_draw_planet_arrays.py -n 10000 --files-per-field 4 --rundes eta_earth
 ```
 
-Main flags: `--systems-per-file/-n`, `--files-per-field`, `--seed` / `--no-seed`, `--rundes`, `--sources-file`, `--data-dir`, `--mass-min-earth`, `--mass-max-earth`, `--a-min-au`, `--a-max-au`, `--eccentricity`, `--no-overwrite`, `--flat-layout`, `--workers` (default: CPU count; `1` runs serially).
+GULLS simulates one event per planet-file row (`gulls.cpp` loops over every row, and event `idx` uses row `idx`), so `--systems-per-file` sets the number of events per field per SubRun.
+
+Main flags: `--systems-per-file/-n`, `--files-per-field`, `--seed` / `--no-seed`, `--rundes`, `--sources-file`, `--data-dir`, `--mass-min-earth`, `--mass-max-earth`, `--a-min-au`, `--a-max-au`, `--eccentricity`, `--no-overwrite`, `--workers` (default: CPU count; `1` runs serially).
 
 To run the original Perl implementation (now reading the same sources file and allowing overrides), use:
 
